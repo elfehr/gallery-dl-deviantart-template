@@ -124,7 +124,7 @@ def main():
                 deviation = os.path.split(url)[-1]
                 deviation = '-'.join(deviation.split('-')[:-1])
                 deviation = '*' + slugify(deviation) + '.html'
-                deviation = os.path.join(folder, '**', deviation)
+                deviation = os.path.join(folder, '../html', deviation)  # VARIABLE
                 candidates = glob.glob(deviation, recursive=True)
 
                 if len(candidates) == 1:
