@@ -37,7 +37,7 @@ For simplicity, I keep all files in =~/.config/gallery-dl/= and use them the fol
 #+begin_src bash
 pushd ~/.config/gallery-dl/
 PYTHONPATH=$(pwd) gallery-dl -p $(pass deviantart) https://www.deviantart.com/$user
-python gallery-dl-deviantart-index.py ~/archive/deviantart
+python gallery-dl-deviantart-index.py ~/archive/deviantart $user
 #+end_src
 
 ** URL replacement
