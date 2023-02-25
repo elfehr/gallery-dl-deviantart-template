@@ -1,0 +1,30 @@
+{
+    "extractor":
+    {
+        "base-directory": "$HOME/archive/",
+        "directory": ["{category}"],
+
+        "deviantart":
+        {
+            "include": "gallery,scraps,journal",
+            "comments": true,
+            "extra": true,
+            "journals": "html",
+            "filename": "{username}_{date:%Y%m%d}_{title!g}.{extension}",
+            "directory": ["{category}", "images"],
+
+            "postprocessors": [{
+                "name": "metadata",
+                "directory": "../html",
+                "mode": "custom",
+                "extension-format": "html",
+                "format": "\fM gallery-dl-deviantart:main"
+            },{
+                "name": "exec",
+                "event"  : "after",
+                "command": ["python", "gallery-dl-deviantart-postprocessing.py",
+                            "{_path}", "{_directory}", "{_filename}", "{username}"]
+            }]
+        }
+    }
+}

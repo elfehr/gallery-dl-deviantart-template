@@ -1,0 +1,97 @@
+* What is this?
+[[https://github.com/mikf/gallery-dl][gallery-dl]] is a command-line program to download image galleries and collections from, among others, deviantArt.
+
+This is a sample configuration that uses postprocessors to format the metadata into HTML pages and link them together, as well as download emojis and avatars, display the comments, and generate a gallery view. The goal is to have a functional archive of a user's posts in the event that deviantArt goes offline.
+
+This contains the following files:
+- =config.json=: relevant configuration for gallery-dl.
+- =gallery-dl-deviantart.py=: metadata formatter called by gallery-dl.
+- =gallery-dl-deviantart-postprocessing.py=: executable formatter called by gallery-dl.
+- =gallery-dl-deviantart-index.py=: extra script to call manually to generate the gallery view.
+
+* How to use
+
+** Requirements
+- =gallery-dl=
+- =beautifulsoup4=
+
+** Gallery-dl configuration
+[[file:config.json]] shows the relevant settings.
+
+*** Paths
+Since the postprocessors are linking files together, the result depends on a specific file hierarchy.
+- all deviations/journal posts/scraps are downloaded into =deviantart/images=
+- all metadata are downloaded into =deviantart/html=
+- files are named ={username}_{date:%Y%m%d}_{title!g}.{extension}=
+The parts where assumptions about the file hierarchy are hard-coded in the code are marked with a =# VARIABLE= comment.
+
+*** Postprocessors
+=Gallery-dl= runs two postprocessors after downloading each image:
+- a metadata processor, that saves the collected metadata into =../html/{username}_{date:%Y%m%d}_{title!g}.html= (relative to the downloaded image), with the format given by the string returned by =gallery-dl-deviantart.main()=.
+- after the image is written, another postprocessor runs the command =python gallery-dl-deviantart-postprocessing.py {_path} {_directory} {_filename} {username}= to modify the URLs in the metadata file (and the deviation if it's not an image).
+
+** Run gallery-dl
+It's not possible to use an absolute path for the metadata module ([[https://github.com/mikf/gallery-dl/issues/3399][issue #3399]]), meaning that =gallery-dl-deviantart.py= needs to be in the python path. Then the next module is called by =python gallery-dl-deviantart-postprocessing.py=.
+
+For simplicity, I keep all files in =~/.config/gallery-dl/= and use them the following way:
+#+begin_src bash
+pushd ~/.config/gallery-dl/
+PYTHONPATH=$(pwd) gallery-dl -p $(pass deviantart) https://www.deviantart.com/$user
+python gallery-dl-deviantart-index.py ~/archive/deviantart
+#+end_src
+
+** URL replacement
+The =gallery-dl-deviantart-postprocessing.py= processor tries to replace in all HTML files:
+- the links to the same deviantArt profile
+- the images embedded in metadata text (typically avatars and emojis). They are downloaded in the =assets= subdirectory.
+
+Each processors run for each individual image, so on the first run, you might see in the output many occurrences of =No candidates for https://www.deviantart.com/...=. This means that the last downloaded deviation has a link to another, which hasn't been downloaded yet so it cannot find its current path. You should run =gallery-dl= a second time with the =--no-skip= option so the postprocessor can look again for the linked files.
+
+Once this processor is done, the only external resource should be the [[https://github.com/kevquirk/simple.css][simple.css]] stylesheet.
+
+* Output
+** Resulting file hierarchy
+#+begin_src shell
+~/archive/deviantart/
+├── index.html
+├── assets
+│   ├── adeviantartcomavatarsdefault.gif
+│   ├── adeviantartcomavatarsgigimei.gif
+│   └── stdeviantartnetminishgruzecontroliconsjournal.gif
+├── html
+│   ├── [username]_20080611_initiation.html
+│   ├── [username]_20090224_flore.html
+│   ├── [username]_20090907_solitude.html
+│   ├── [username]_20180521_san-francisco-bay.html
+│   └── [username]_20190210_leif-2009-2019.html
+└── images
+    ├── [username]_20080611_initiation.htm
+    ├── [username]_20090224_flore.png
+    ├── [username]_20090907_solitude.jpg
+    ├── [username]_20180521_san-francisco-bay.png
+    └── [username]_20190210_leif-2009-2019.png
+#+end_src
+
+** Screenshots
+The HTML alone should be usable, but for a nicer output I included the [[https://github.com/kevquirk/simple.css][simple.css]] stylesheet (in dark or light mode depending on your browser settings).
+
+A deviation with comments (zoomed out):
+[[file:screenshots/deviation.png]]
+
+All pages have the same template:
+- Deviation title
+  - Author avatar
+  - Date with link to online version
+  - Categories
+  - Statistics on comments and favorites
+- Image if applicable (otherwise falls back on a thumbnail if available)
+- Description if it is a deviation
+- Text excerpt for journals and textual deviations, with a link to the full version
+- Threaded comments
+
+The index page:
+[[file:screenshots/index.png]]
+Template:
+- 3-columns grid of all images, ordered chronologically (no pagination)
+- Journals and textual deviations are shown by their title
+- Clicking on an element calls the metadata page
