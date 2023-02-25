@@ -72,18 +72,27 @@ def gallery(directory, user=None):
     If passing a username, restrict to filenames starting with it."""
 
     imgdir = os.path.join(directory, relative_image('', directory))
-    files = [f for f in os.listdir(imgdir)
-             if os.path.isfile(os.path.join(imgdir, f))
-             and f != 'index.html']
-    files = sorted(files, key=lambda f: int(f.split('_')[1]))
-    txt = ''
+    allfiles = os.listdir(imgdir)
 
+    def criteria(f):
+        if f == 'index.html':
+            return False
+        if os.path.splitext(f)[1] == '.part':
+            print('Warning: potential incomplete file', f)
+            return False
+        if user and not f.startswith(user):
+            return False
+        return True
+
+    files = sorted(filter(criteria, allfiles),
+                   key=lambda f: int(f.split('_')[1]))
     statstxt = statistics(files)
+    txt = ''
 
     for file in files:
         src = relative_image(file, directory)
         href = relative_metadata(file, directory)
-        if os.path.splitext(file)[1] in {'.html', '.htm'}:
+        if os.path.splitext(file)[1] in {'.html', '.htm', '.7z'}:
             img = textual_gallery(href, directory)
         else:
             img = '<img src="{}">'.format(src)
