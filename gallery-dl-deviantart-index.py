@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 template = ('<!DOCTYPE html>\n<html>\n<head>\n' +
             '<link href="https://cdn.simplecss.org/simple.min.css" ' +
             'rel="stylesheet"/>\n' +
-            '<title>Gallery</title>\n' +
+            '<title>Gallery {u}</title>\n' +
             '</head>\n<style>\n' +
             '.gallery {{column-count: 3;}}\n' +
             '.gallery a {{text-decoration: none; color: inherit;}}\n' +
@@ -16,7 +16,7 @@ template = ('<!DOCTYPE html>\n<html>\n<head>\n' +
             '.gallery div {{padding: 1em 0;' +
             'text-align: center; vertical-align: middle;}}\n' +
             '</style>\n<body>\n<header>\n' +
-            '<h1>Gallery</h1>\n' +
+            '<h1>Gallery {u}</h1>\n' +
             '{s}</header>\n<main>\n' +
             '<div class="gallery">\n{i}</div>\n'
             '</main>\n</body>\n</html>\n')
@@ -66,9 +66,10 @@ def textual_gallery(metadata, directory):
     return '<div>{}</div>'.format(soup.title.string)
 
 
-def gallery(directory):
+def gallery(directory, user=None):
     """List all deviations and generate an index in directory
-    to display them as a chronological gallery."""
+    to display them as a chronological gallery.
+    If passing a username, restrict to filenames starting with it."""
 
     imgdir = os.path.join(directory, relative_image('', directory))
     files = [f for f in os.listdir(imgdir)
@@ -91,22 +92,23 @@ def gallery(directory):
     return txt, statstxt
 
 
-def main(directory):
+def main(directory, user=None):
     """Fill the html template with the generated gallery.
     Argument: directory where to create the index.
     The path to the images and metadata are set in the
     relative_image and relative_metadata functions and should match
     the deviantart.directory and metadata.directory settings."""
 
-    images, stats = gallery(directory)
-    index = template.format(s=stats, i=images)
+    images, stats = gallery(directory, user)
+    username = 'of '+user.capitalize() if user else ''
+    html = template.format(s=stats, i=images, u=username)
 
     # Save modifications
     file = os.path.join(directory, 'index.html')
     with open(file, 'w') as fp:
-        fp.write(index)
+        fp.write(html)
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        main(sys.argv[1])
+        main(*sys.argv[1:])
